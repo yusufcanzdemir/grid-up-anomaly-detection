@@ -1,0 +1,18 @@
+[project]
+name = "grid-up-anomaly-detection"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "yusufcanzdemir",email = "yusufcan4044@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+]
+
+[tool.poetry]
+packages = [{include = "grid_up_anomaly_detection", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

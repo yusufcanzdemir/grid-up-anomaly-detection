@@ -1,0 +1,1 @@
+#Tüm bildirim sistemleri için ortak şablon

@@ -97,3 +97,34 @@ logs/
 *.db
 
 .env
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+
+# Generated AI artifacts (reproducible with ai/scripts/*)
+ai/models/
+ai/reports/
+ai/data/synthetic/
+
+# Organizer-supplied hackathon material (Restricted / Hizmete Özel): never commit
+/data/
+*.zip
+
+# Secrets / local
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/

@@ -1,11 +1,16 @@
 from grid_up_anomaly_detection.communication.telegram.bot import get_updates, answer_callback, edit_message
-from grid_up_anomaly_detection.communication.telegram.formatters import (
-    format_alarm_message, get_details, get_sensors, get_solution
-)
+from grid_up_anomaly_detection.communication.telegram.formatters import format_alarm_message
 from grid_up_anomaly_detection.communication.telegram.ui import get_main_keyboard
 from grid_up_anomaly_detection.models import AlarmStatus
 
 ACTIVE_ALARMS = {}
+
+def notify_backend(alarm, action):
+    """
+    Backend ile iletişim fonksiyonu.
+    Şu an için mock log bırakıyor, gerçek projede API çağrısı (requests.post vb.) yapılır.
+    """
+    print(f"[BACKEND İLETİŞİMİ] Backend'e iletiliyor -> Alarm ID: {alarm.id} | Aksiyon: '{action}' | Yeni Durum: {alarm.status.value}")
 
 def update_alarm_message(chat_id, message_id, alarm):
     edit_message(
@@ -29,18 +34,25 @@ def handle_callback(callback_query):
         
     alarm = ACTIVE_ALARMS[message_id] 
 
-    if action == "details":
-        edit_message(chat_id, message_id, get_details(alarm), get_main_keyboard(alarm.status))
-    elif action == "sensors":
-        edit_message(chat_id, message_id, get_sensors(alarm), get_main_keyboard(alarm.status))
-    elif action == "solution":
-        edit_message(chat_id, message_id, get_solution(alarm), get_main_keyboard(alarm.status))
-    elif action == "acknowledge":
+    if action == "take_task":
         alarm.status = AlarmStatus.ACKNOWLEDGED
         update_alarm_message(chat_id, message_id, alarm)
-    elif action == "resolve":
+        notify_backend(alarm, action)
+        
+    elif action == "resolved":
         alarm.status = AlarmStatus.RESOLVED
         update_alarm_message(chat_id, message_id, alarm)
+        notify_backend(alarm, action)
+        
+    elif action == "not_resolved":
+        alarm.status = AlarmStatus.NOT_RESOLVED
+        update_alarm_message(chat_id, message_id, alarm)
+        notify_backend(alarm, action)
+        
+    elif action == "false_alarm":
+        alarm.status = AlarmStatus.FALSE_ALARM
+        update_alarm_message(chat_id, message_id, alarm)
+        notify_backend(alarm, action)
 
 def start_telegram_listener():
     """Telegram'dan gelen buton tıklamalarını dinler."""

@@ -2,7 +2,7 @@
 
 Prototype scope on purpose: in-memory state, no auth, no broker, single process.
 
-    poetry run uvicorn gridup_ai.service.app:app --reload --port 8000     (from ai/, needs the `api` extra)
+    poetry run uvicorn grid_up_anomaly_detection.ai.service.app:app --reload --port 8000     (from ai/, needs the `api` extra)
 """
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ import pandas as pd
 from fastapi import Body, FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
-from gridup_ai.baseline import load_baselines
-from gridup_ai.config import MODELS_DIR, SYNTH_DIR, load_config
-from gridup_ai.engine import RiskEngine
-from gridup_ai.ml import MLDetector
-from gridup_ai.modbus_maps import SCADA_BLOCK_SIZE, SCADA_REGISTERS, build_scada_block, module_base_address
-from gridup_ai.observability import format_tick
-from gridup_ai.schema import CANONICAL_COLUMNS
+from grid_up_anomaly_detection.ai.baseline import load_baselines
+from grid_up_anomaly_detection.ai.config import MODELS_DIR, SYNTH_DIR, load_config
+from grid_up_anomaly_detection.ai.engine import RiskEngine
+from grid_up_anomaly_detection.ai.ml import MLDetector
+from grid_up_anomaly_detection.ai.modbus_maps import SCADA_BLOCK_SIZE, SCADA_REGISTERS, build_scada_block, module_base_address
+from grid_up_anomaly_detection.ai.observability import format_tick
+from grid_up_anomaly_detection.ai.schema import CANONICAL_COLUMNS
 
 from .store import Store
 

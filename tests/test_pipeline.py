@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gridup_ai.baseline import fit_module_baseline
-from gridup_ai.config import SUPPLIED_EXCEL, load_config
-from gridup_ai.engine import RiskEngine
-from gridup_ai.features import build_features
-from gridup_ai.loaders import load_supplied_current, secondary_ma_to_primary_a
-from gridup_ai.modbus_maps import (
+from grid_up_anomaly_detection.ai.baseline import fit_module_baseline
+from grid_up_anomaly_detection.ai.config import SUPPLIED_EXCEL, load_config
+from grid_up_anomaly_detection.ai.engine import RiskEngine
+from grid_up_anomaly_detection.ai.features import build_features
+from grid_up_anomaly_detection.ai.loaders import load_supplied_current, secondary_ma_to_primary_a
+from grid_up_anomaly_detection.ai.modbus_maps import (
     NA_SIGNED,
     SCADA_BLOCK_SIZE,
     SCADA_REGISTERS,
@@ -19,9 +19,9 @@ from gridup_ai.modbus_maps import (
     decode_tvoc_system_state,
     module_base_address,
 )
-from gridup_ai.physics import dew_point_c, rh_from_abs_humidity
-from gridup_ai.risk import status_with_hysteresis
-from gridup_ai.simulator import ModuleParams, Scenario, simulate
+from grid_up_anomaly_detection.ai.physics import dew_point_c, rh_from_abs_humidity
+from grid_up_anomaly_detection.ai.risk import status_with_hysteresis
+from grid_up_anomaly_detection.ai.simulator import ModuleParams, Scenario, simulate
 
 CFG = load_config()
 

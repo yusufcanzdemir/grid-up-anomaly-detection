@@ -5,10 +5,10 @@ import json
 
 import pandas as pd
 
-from gridup_ai.baseline import fit_module_baseline, save_baselines
-from gridup_ai.config import MODELS_DIR, SYNTH_DIR, load_config
-from gridup_ai.features import build_features
-from gridup_ai.ml import MLDetector
+from grid_up_anomaly_detection.ai.baseline import fit_module_baseline, save_baselines
+from grid_up_anomaly_detection.ai.config import MODELS_DIR, SYNTH_DIR, load_config
+from grid_up_anomaly_detection.ai.features import build_features
+from grid_up_anomaly_detection.ai.ml import MLDetector
 
 
 def _read(path) -> pd.DataFrame:

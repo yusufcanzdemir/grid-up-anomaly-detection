@@ -5,12 +5,12 @@ import json
 
 import pandas as pd
 
-from gridup_ai.baseline import load_baselines
-from gridup_ai.config import MODELS_DIR, REPORTS_DIR, SYNTH_DIR, load_config
-from gridup_ai.engine import SCHEMA_VERSION, RiskEngine
-from gridup_ai.evaluation import evaluate_run, summarize
-from gridup_ai.ml import MLDetector
-from gridup_ai.risk import STATUSES
+from grid_up_anomaly_detection.ai.baseline import load_baselines
+from grid_up_anomaly_detection.ai.config import MODELS_DIR, REPORTS_DIR, SYNTH_DIR, load_config
+from grid_up_anomaly_detection.ai.engine import SCHEMA_VERSION, RiskEngine
+from grid_up_anomaly_detection.ai.evaluation import evaluate_run, summarize
+from grid_up_anomaly_detection.ai.ml import MLDetector
+from grid_up_anomaly_detection.ai.risk import STATUSES
 
 COLS = ["scenario", "detected", "max_status", "max_risk", "min_health", "lead_time_h", "naive_lead_time_h",
         "detection_delay_h", "naive_detection_delay_h", "diagnosis", "diagnosis_correct",

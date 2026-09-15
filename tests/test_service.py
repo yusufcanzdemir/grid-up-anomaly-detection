@@ -8,11 +8,11 @@ pytest.importorskip("fastapi", reason="API prototype needs the `api` extra")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from gridup_ai.config import SYNTH_DIR  # noqa: E402
-from gridup_ai.modbus_maps import SCADA_BLOCK_SIZE  # noqa: E402
-from gridup_ai.observability import format_tick  # noqa: E402
-from gridup_ai.service.app import create_app  # noqa: E402
-from gridup_ai.simulator import Scenario, simulate  # noqa: E402
+from grid_up_anomaly_detection.ai.config import SYNTH_DIR  # noqa: E402
+from grid_up_anomaly_detection.ai.modbus_maps import SCADA_BLOCK_SIZE  # noqa: E402
+from grid_up_anomaly_detection.ai.observability import format_tick  # noqa: E402
+from grid_up_anomaly_detection.ai.service.app import create_app  # noqa: E402
+from grid_up_anomaly_detection.ai.simulator import Scenario, simulate  # noqa: E402
 
 MODULE = "TEST-M1"
 

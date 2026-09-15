@@ -5,7 +5,7 @@
 > taken from any supplied document, and it must be reviewed by the DSO before any field use.
 > No connection to a real SCADA system is made anywhere in this repository.
 
-Implementation: `ai/src/gridup_ai/modbus_maps.py`. Live encoding of any module: `GET /scada/{module_id}`.
+Implementation: `ai/src/grid_up_anomaly_detection.ai/modbus_maps.py`. Live encoding of any module: `GET /scada/{module_id}`.
 
 ---
 

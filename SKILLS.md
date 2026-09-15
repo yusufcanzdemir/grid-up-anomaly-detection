@@ -23,7 +23,7 @@ poetry run ruff check .
 ```
 
 * Python ≥ 3.11, Poetry, dependencies declared in `ai/pyproject.toml` only.
-* Canonical runtime scoring path: `RiskEngine.update()` in `ai/src/gridup_ai/engine.py`.
+* Canonical runtime scoring path: `RiskEngine.update()` in `ai/src/grid_up_anomaly_detection.ai/engine.py`.
   Do not add a second (stateless) risk engine; `RiskEngine.score()` is its batch form.
 * Every threshold lives in `ai/configs/default.yaml` with a provenance tag
   (`[DOC]`, `[DATA]`, `[EXT]`, `[ASSUMPTION]`, `[DEMO]`, `[PLACEHOLDER]`).
@@ -41,7 +41,7 @@ poetry run ruff check .
 
 * Ruff, line length 120. Match the surrounding code; no style-only rewrites.
 * Tests assert behaviour (detection, false alarms, degradation), not coverage numbers.
-* Paths come from `gridup_ai.config`; no absolute or user-specific paths.
+* Paths come from `grid_up_anomaly_detection.ai.config`; no absolute or user-specific paths.
 
 ## Git workflow
 

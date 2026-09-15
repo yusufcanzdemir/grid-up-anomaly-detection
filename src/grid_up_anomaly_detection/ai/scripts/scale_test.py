@@ -16,11 +16,11 @@ import time
 
 import pandas as pd
 
-from gridup_ai.baseline import load_baselines
-from gridup_ai.config import MODELS_DIR, REPORTS_DIR, SYNTH_DIR, load_config
-from gridup_ai.engine import BUFFER_HOURS, RiskEngine
-from gridup_ai.ml import MLDetector
-from gridup_ai.schema import CANONICAL_COLUMNS
+from grid_up_anomaly_detection.ai.baseline import load_baselines
+from grid_up_anomaly_detection.ai.config import MODELS_DIR, REPORTS_DIR, SYNTH_DIR, load_config
+from grid_up_anomaly_detection.ai.engine import BUFFER_HOURS, RiskEngine
+from grid_up_anomaly_detection.ai.ml import MLDetector
+from grid_up_anomaly_detection.ai.schema import CANONICAL_COLUMNS
 
 
 def max_rss_mb() -> float:

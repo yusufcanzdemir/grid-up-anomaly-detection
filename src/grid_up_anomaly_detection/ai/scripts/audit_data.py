@@ -1,9 +1,9 @@
 """Audit of the supplied workbook: what the data actually is, and what it can/cannot support."""
 from __future__ import annotations
 
-from gridup_ai.config import REPORTS_DIR, SUPPLIED_EXCEL, load_config
-from gridup_ai.loaders import load_supplied_current
-from gridup_ai.physics import first_order
+from grid_up_anomaly_detection.ai.config import REPORTS_DIR, SUPPLIED_EXCEL, load_config
+from grid_up_anomaly_detection.ai.loaders import load_supplied_current
+from grid_up_anomaly_detection.ai.physics import first_order
 
 
 def main() -> None:

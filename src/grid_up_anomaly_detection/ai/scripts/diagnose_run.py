@@ -9,11 +9,11 @@ import json
 
 import pandas as pd
 
-from gridup_ai.baseline import load_baselines
-from gridup_ai.config import MODELS_DIR, SYNTH_DIR, load_config
-from gridup_ai.engine import RiskEngine
-from gridup_ai.evaluation import episodes
-from gridup_ai.ml import MLDetector
+from grid_up_anomaly_detection.ai.baseline import load_baselines
+from grid_up_anomaly_detection.ai.config import MODELS_DIR, SYNTH_DIR, load_config
+from grid_up_anomaly_detection.ai.engine import RiskEngine
+from grid_up_anomaly_detection.ai.evaluation import episodes
+from grid_up_anomaly_detection.ai.ml import MLDetector
 
 
 def find_file(name: str, meta: dict):

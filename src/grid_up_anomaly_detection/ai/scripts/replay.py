@@ -18,9 +18,9 @@ from typing import Any
 
 import pandas as pd
 
-from gridup_ai.config import SYNTH_DIR
-from gridup_ai.observability import format_tick
-from gridup_ai.schema import CANONICAL_COLUMNS
+from grid_up_anomaly_detection.ai.config import SYNTH_DIR
+from grid_up_anomaly_detection.ai.observability import format_tick
+from grid_up_anomaly_detection.ai.schema import CANONICAL_COLUMNS
 
 
 def post(url: str, body: dict[str, Any] | None = None, timeout: float = 30.0) -> dict[str, Any]:
@@ -131,4 +131,4 @@ if __name__ == "__main__":
         raise SystemExit(f"API returned {exc.code} for {exc.url}\n{exc.read().decode()[:500]}")
     except urllib.error.URLError as exc:
         raise SystemExit(f"cannot reach the API ({exc.reason}). Start it with:\n"
-                         f"  cd ai && poetry run uvicorn gridup_ai.service.app:app --port 8000")
+                         f"  cd ai && poetry run uvicorn grid_up_anomaly_detection.ai.service.app:app --port 8000")

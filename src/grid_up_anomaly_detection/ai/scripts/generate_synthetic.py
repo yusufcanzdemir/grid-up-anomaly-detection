@@ -5,8 +5,8 @@ import argparse
 import json
 import shutil
 
-from gridup_ai.config import SYNTH_DIR, load_config
-from gridup_ai.simulator import ModuleParams, Scenario, fleet_params, scenario_library, simulate
+from grid_up_anomaly_detection.ai.config import SYNTH_DIR, load_config
+from grid_up_anomaly_detection.ai.simulator import ModuleParams, Scenario, fleet_params, scenario_library, simulate
 
 
 def main() -> None:

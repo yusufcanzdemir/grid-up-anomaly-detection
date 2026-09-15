@@ -1,0 +1,122 @@
+# Grid Up AI / risk engine configuration.
+# Provenance tags on every number:
+#   [DOC]   taken from a supplied document (file named)
+#   [DATA]  derived from the supplied Excel data
+#   [EXT]   external engineering reference NOT in the supplied docs -> must be validated
+#   [ASSUMPTION] engineering assumption, [DEMO] synthetic-demo choice
+#   [PLACEHOLDER] configurable limit that a domain engineer must validate before field use
+# None of these numbers is an authoritative electrical safety limit.
+
+sampling:
+  # reference only: features derive the cadence from the data (features.sampling_minutes)
+  interval_s: 60                      # [ASSUMPTION] canonical 1-min grid; thermal time constants are 15-90 min
+
+sensors:                              # read by scripts/audit_data.py
+  excel_current:                      # [DOC] Istenen Veriler.xlsx / "Akim Sensoru" sheet
+    secondary_full_scale_ma: 100      # [DOC] "Sekonderi 100mA"
+    primary_full_scale_a: 600         # [DOC] "elimizdeki 600A"  -> 6 A per mA
+  ct_secondary_clamp:                 # [DOC] same sheet, F2: "125 mA karsiligi 5 A baska bir akim TR sekonderi"
+    secondary_full_scale_ma: 125
+    ct_secondary_a: 5
+    ct_ratio: 500                     # [DOC] 1600 kVA main CT 2500/5 (AG Pano Donanim Listesi, Tablo 8)
+
+panel:                                # 1600 kVA LV panel (TEDAS-MLZ/2003-06.B); only feeder_rated_a is read by code
+  main_bus_rated_a: 2312              # [DOC] Tablo 3a
+  feeder_rated_a: 400                 # [DOC] Tablo 8, DSYA 2-Boy 400 A (1600 kVA column)
+  ambient_max_c: 40                   # [DOC] Tablo 1 (indoor)
+  ambient_24h_mean_max_c: 35          # [DOC] Tablo 1
+  ambient_min_c: -5                   # [DOC] Tablo 1 (indoor)
+  rh_limit_at_40c_pct: 50             # [DOC] Tablo 1 (indoor)
+  rh_limit_at_20c_pct: 90             # [DOC] Tablo 1 (indoor)
+  terminal_temp_rise_limit_k: 70      # [EXT] IEC/TS EN 61439-1 terminal temp-rise limit; spec points to Cizelge 8 but table not supplied
+
+# Physical plausibility for input validation (sensor-range sanity, not alarm limits)
+validation:
+  temp_c: [-40, 150]                  # [ASSUMPTION] typical industrial temperature sensor range
+  humidity_pct: [0, 100]
+  current_pu_max: 2.0                 # [ASSUMPTION] > 2x rated current is treated as a bad reading (short-circuits are cleared by protection)
+  pd_count_per_min: [0, 100000]       # [ASSUMPTION]
+  # single-sample EMI spikes are removed by features.spike_median_min, not by a step limit
+
+baseline:                             # per-module learned thermal model (commissioning window)
+  tau_grid_min: [5, 10, 15, 20, 30, 45, 60, 90, 120]
+  min_load_pu2: 0.12                  # [ASSUMPTION] heating index only computed when (I/Ir)^2 filter is above this
+  min_rise_k: 6.0                     # [ASSUMPTION] ...and when the expected temperature rise exceeds this (ratio needs signal)
+  min_r2: 0.5                         # baseline rejected below this fit quality -> rules-only mode
+  commissioning_days: 7               # [ASSUMPTION]
+
+features:                             # window lengths: [ASSUMPTION] unless stated
+  spike_median_min: 5
+  heating_index_smooth_min: 60
+  heating_index_ffill_h: 12
+  trend_window_h: 24
+  pd_window_min: 60
+  pd_corr_window_h: 24
+  thermal_image_tau_min: 30           # [ASSUMPTION] thermal-image overload (IEC 60255-149 concept) time constant
+  # A stuck sensor means "flat for hours", not "four identical smoothed readings". The window must be
+  # long enough that a working, slow, quantised channel (cabinet air at 0.1 degC) has to move.
+  stuck_window_min: 180
+  stuck_min_samples: 12               # also guards coarse cadences: 15-min polling gives 12 per 3 h
+  stuck_std_eps: 0.01
+
+# Evidence: severity ramps linearly from `lo` (0) to `hi` (1); `confirm_min` is the persistence window.
+# All [PLACEHOLDER] unless stated.
+evidence:
+  CONNECTION_HEATING:   {group: thermal,     col: heat_index_max,   lo: 1.3,  hi: 2.5,  confirm_min: 30}
+  PHASE_ASYMMETRY:      {group: thermal,     col: heat_asym,        lo: 1.25, hi: 2.0,  confirm_min: 30}
+  LUG_RESIDUAL:         {group: thermal,     col: lug_resid_z_max,  lo: 4.0,  hi: 12.0, confirm_min: 15}
+  HEATING_TREND:        {group: thermal,     col: heat_index_slope, lo: 0.5,  hi: 1.5,  confirm_min: 60}   # index units / day; normal runs peak at 0.23/day
+  ABS_TEMPERATURE:      {group: thermal,     col: temp_max_f,       lo: 70.0, hi: 95.0, confirm_min: 10}   # [PLACEHOLDER] vs [EXT] 35C + 70K
+  CABINET_HEATING:      {group: ventilation, col: cab_index,        lo: 1.25, hi: 1.8,  confirm_min: 60}
+  THERMAL_OVERLOAD:     {group: electrical,  col: theta,            lo: 0.9,  hi: 1.3,  confirm_min: 5}
+  NEUTRAL_CURRENT:      {group: electrical,  col: neutral_ratio,    lo: 0.5,  hi: 1.0,  confirm_min: 30}
+  HUMIDITY_HIGH:        {group: environment, col: rh,               lo: 80.0, hi: 95.0, confirm_min: 30}
+  CONDENSATION:         {group: environment, col: dew_margin_c,     lo: 5.0,  hi: 0.5,  confirm_min: 15}   # inverted ramp
+  PD_ACTIVITY:          {group: discharge,   col: pd_z,             lo: 3.0,  hi: 10.0, confirm_min: 30}
+  PD_TREND:             {group: discharge,   col: pd_slope,         lo: 0.3,  hi: 1.5,  confirm_min: 60}   # log-rate / day
+  ML_ANOMALY:           {group: ml,          col: ml_sev,           lo: 0.0,  hi: 1.0,  confirm_min: 15}
+
+# Noisy-OR group weights = max risk a single physical channel can produce on its own.
+# thermal alone can reach CRITICAL; environment / ml alone can only reach WATCH.  [ASSUMPTION] design choice
+group_weights:
+  thermal: 0.88
+  ventilation: 0.80
+  electrical: 0.75
+  environment: 0.55
+  discharge: 0.75
+  ml: 0.45
+
+# Hard safety floors (risk in 0..1). Work even if baseline/ML are unavailable.
+# Floors and hold times are [ASSUMPTION] design choices mapping each rule onto a status band;
+# the physical limits (abs_temp_critical_c, theta_*) are [PLACEHOLDER].
+rules:
+  arc_trip_floor: 1.00
+  arc_latch_min: 60
+  arc_system_error_floor: 0.60        # protection unavailable -> WARNING
+  arc_light_warning_floor: 0.30
+  abs_temp_critical_c: 90.0           # [PLACEHOLDER]
+  abs_temp_critical_floor: 0.85
+  theta_hold_min: 20                  # thermal image must STAY above the limit; a brief pickup is not an alarm
+  theta_warning: 1.0                  # [PLACEHOLDER] thermal image at rated state
+  theta_warning_floor: 0.60
+  theta_critical: 1.2                 # [PLACEHOLDER]
+  theta_critical_floor: 0.80
+  sensor_fault_floor: 0.30
+  condensation_margin_c: 0.0          # actual condensation on surfaces (spec 2.2.8.5 requires ventilation against "terleme")
+  condensation_hold_min: 30
+  condensation_floor: 0.60
+
+status:                               # [ASSUMPTION] operator-facing bands and anti-flapping
+  bands: {WATCH: 30, WARNING: 60, CRITICAL: 80}
+  deescalate_margin: 5
+  deescalate_hold_min: 30
+  health_tau_h: 12
+
+ml:
+  n_estimators: 200
+  max_train_rows: 30000
+  features: [lug_resid_z_max, heat_asym, cab_resid_z, theta, current_max_pu, rh, dew_margin_c, heat_index_max]
+  sev_quantile: 0.995
+  sev_span_k: 2.0
+
+seed: 42

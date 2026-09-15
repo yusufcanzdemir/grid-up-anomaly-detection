@@ -2,15 +2,21 @@ from grid_up_anomaly_detection.communication.telegram.bot import get_updates, an
 from grid_up_anomaly_detection.communication.telegram.formatters import format_alarm_message
 from grid_up_anomaly_detection.communication.telegram.ui import get_main_keyboard
 from grid_up_anomaly_detection.models import AlarmStatus
+from grid_up_anomaly_detection.communication.email.gmail import notify_email
 
 ACTIVE_ALARMS = {}
 
 def notify_backend(alarm, action):
     """
     Backend ile iletişim fonksiyonu.
-    Şu an için mock log bırakıyor, gerçek projede API çağrısı (requests.post vb.) yapılır.
     """
     print(f"[BACKEND İLETİŞİMİ] Backend'e iletiliyor -> Alarm ID: {alarm.id} | Aksiyon: '{action}' | Yeni Durum: {alarm.status.value}")
+    
+    # Durum değişikliğini (çözüldü/çözülmedi/yanlış ihbar) e-posta ile bildir
+    # Görev üstlenildi adımında mail atmaya gerek yoksa buraya if ekleyebiliriz,
+    # şimdilik tüm durumlarda (veya sadece sonuçlarda) mail atsın.
+    if alarm.status in (AlarmStatus.RESOLVED, AlarmStatus.NOT_RESOLVED, AlarmStatus.FALSE_ALARM):
+        notify_email(alarm, is_update=True)
 
 def update_alarm_message(chat_id, message_id, alarm):
     edit_message(

@@ -3,6 +3,7 @@ import requests
 from grid_up_anomaly_detection.config import config
 from grid_up_anomaly_detection.communication.telegram.formatters import format_alarm_message
 from grid_up_anomaly_detection.communication.telegram.ui import get_main_keyboard
+from grid_up_anomaly_detection.communication.email.gmail import notify_email
 
 BASE_URL = f"https://api.telegram.org/bot{config.TELEGRAM.BOT_TOKEN}"
 
@@ -20,6 +21,10 @@ def send_telegram_alert(alarm):
         "text": format_alarm_message(alarm),
         "reply_markup": json.dumps(get_main_keyboard(alarm.status))
     }
+    
+    # Mail bildirimini de tetikle
+    notify_email(alarm, is_update=False)
+    
     return telegram_request("sendMessage", data)
 
 def edit_message(chat_id, message_id, text, reply_markup=None):

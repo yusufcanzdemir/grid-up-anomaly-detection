@@ -95,6 +95,29 @@ class EngineService:
         if event and event["status_code"] >= 2:
             log.warning("ALARM %s %s -> %s (%s)", event["module_id"], event["previous_status"],
                         event["status"], event["condition"])
+                        
+            try:
+                from grid_up_anomaly_detection.communication.telegram.bot import send_telegram_alert
+                from grid_up_anomaly_detection.communication.telegram.listener import ACTIVE_ALARMS
+                from grid_up_anomaly_detection.models import Alarm, AlarmStatus
+
+                alarm = Alarm(
+                    id=int(time.time()),
+                    panel=payload.get("panel_id") or payload.get("module_id") or "Bilinmeyen",
+                    location=payload.get("site_id") or "Ana Üretim Hattı",
+                    status=AlarmStatus.CRITICAL,  # İş akışı durumu (workflow_state)
+                    ai_status=payload.get("status", "Bilinmiyor"),
+                    suspected_condition=(payload.get("suspected_condition") or {}).get("message", (payload.get("suspected_condition") or {}).get("code", "")),
+                    reasons=[r.get("message", r.get("code", "")) for r in payload.get("reasons", [])]
+                )
+                
+                result = send_telegram_alert(alarm)
+                if result and result.get("message_id"):
+                    ACTIVE_ALARMS[result.get("message_id")] = alarm
+                    log.info("Telegram bildirimi başarıyla gönderildi ve aktif alarmlara eklendi.")
+            except Exception as e:
+                log.error(f"Telegram bildirimi gönderilemedi: {e}")
+                
         return payload
 
     def heartbeat(self) -> int:

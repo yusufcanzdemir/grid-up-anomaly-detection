@@ -25,6 +25,8 @@ saha sensörleri / Modbus (MPR-53CS, TVOC-2) -> kanonik okuma -> AI risk motoru 
                                                          model + sınırlı ML         alarm, SCADA bloğu
 ```
 
+> **Not:** `mqtt_to_db.py` ve ilgili MQTT hatları, yapay zeka (RiskEngine) motorundan tamamen bağımsızdır. Bu hat sadece saha sensörlerinden gelen ham veriyi (raw data) ileride kullanılmak üzere veritabanında (Data Lake) arşivlemek amacıyla bulunur. Anomali tespiti yapmaz.
+
 Backend/monitoring, frontend, SCADA/Modbus entegrasyonu ve donanım dokümantasyonu içerik oluştukça kendi klasörlerine eklenecek. Geliştirme kuralları: [SKILLS.md](SKILLS.md).
 
 ## AI Risk Engine

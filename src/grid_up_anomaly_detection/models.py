@@ -13,10 +13,15 @@ class Alarm:
     id: int
     panel: str
     location: str
-    error: str
-    temperature: float
-    voltage: float
-    current: float
-    fan: bool
-    humidity: int
+    error: str = ""
+    temperature: float = 0.0
+    voltage: float = 0.0
+    current: float = 0.0
+    fan: bool = False
+    humidity: int = 0
     status: AlarmStatus = AlarmStatus.CRITICAL
+    
+    # AI Alanları
+    ai_status: str = ""
+    suspected_condition: str = ""
+    reasons: list = None

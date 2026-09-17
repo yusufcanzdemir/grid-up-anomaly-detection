@@ -1,0 +1,216 @@
+{
+  "PANEL-01-M1": {
+    "scenario": "normal_0",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "MV_CELL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH"
+  },
+  "PANEL-02-M1": {
+    "scenario": "normal_1",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH"
+  },
+  "PANEL-03-M1": {
+    "scenario": "normal_2",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH"
+  },
+  "PANEL-04-M1": {
+    "scenario": "normal_3",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "MV_CELL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH"
+  },
+  "PANEL-05-M1": {
+    "scenario": "normal_4",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH"
+  },
+  "PANEL-06-M1": {
+    "scenario": "normal_5",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH"
+  },
+  "DEMO-loose_connection": {
+    "scenario": "loose_connection",
+    "kind": "loose_connection",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": "2026-09-09 00:00:00+00:00",
+    "failure": "2026-09-13 14:24:00+00:00",
+    "expected_condition": "LOOSE_CONNECTION",
+    "expected_max_status": "NORMAL",
+    "detect_level": "WARNING",
+    "expected_reasons": [
+      "PHASE_ASYMMETRY",
+      "CONNECTION_HEATING",
+      "LUG_RESIDUAL",
+      "HEATING_TREND"
+    ]
+  },
+  "DEMO-ventilation_failure": {
+    "scenario": "ventilation_failure",
+    "kind": "ventilation_degradation",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": "2026-09-09 00:00:00+00:00",
+    "failure": null,
+    "expected_condition": "VENTILATION_DEGRADATION",
+    "expected_max_status": "NORMAL",
+    "detect_level": "WARNING",
+    "expected_reasons": [
+      "CABINET_HEATING"
+    ]
+  },
+  "DEMO-sustained_overload": {
+    "scenario": "sustained_overload",
+    "kind": "sustained_overload",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": "2026-09-09 00:00:00+00:00",
+    "failure": "2026-09-12 00:00:00+00:00",
+    "expected_condition": "OVERLOAD",
+    "expected_max_status": "NORMAL",
+    "detect_level": "WARNING",
+    "expected_reasons": [
+      "THERMAL_OVERLOAD",
+      "OVERLOAD_RULE",
+      "ABS_TEMPERATURE"
+    ]
+  },
+  "DEMO-high_humidity_condensation": {
+    "scenario": "high_humidity_condensation",
+    "kind": "condensation",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": "2026-09-09 04:47:59.999999999+00:00",
+    "failure": null,
+    "expected_condition": "CONDENSATION_RISK",
+    "expected_max_status": "NORMAL",
+    "detect_level": "WARNING",
+    "expected_reasons": [
+      "CONDENSATION",
+      "HUMIDITY_HIGH",
+      "CONDENSATION_RULE"
+    ]
+  },
+  "DEMO-developing_partial_discharge": {
+    "scenario": "developing_partial_discharge",
+    "kind": "insulation_degradation",
+    "rated_a": 400.0,
+    "profile": "MV_CELL",
+    "onset": "2026-09-09 00:00:00+00:00",
+    "failure": "2026-09-14 12:00:00+00:00",
+    "expected_condition": "INSULATION_DEGRADATION",
+    "expected_max_status": "NORMAL",
+    "detect_level": "WARNING",
+    "expected_reasons": [
+      "PD_ACTIVITY",
+      "PD_TREND"
+    ]
+  },
+  "DEMO-arc_event": {
+    "scenario": "arc_event",
+    "kind": "sudden_arc",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": "2026-09-10 07:12:00+00:00",
+    "failure": null,
+    "expected_condition": "ARC_FLASH",
+    "expected_max_status": "NORMAL",
+    "detect_level": "WARNING",
+    "expected_reasons": [
+      "ARC_TRIP"
+    ]
+  },
+  "DEMO-sensor_failure": {
+    "scenario": "sensor_failure",
+    "kind": "sensor_fault",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": "2026-09-09 12:00:00+00:00",
+    "failure": null,
+    "expected_condition": "SENSOR_FAULT",
+    "expected_max_status": "NORMAL",
+    "detect_level": "WATCH",
+    "expected_reasons": [
+      "SENSOR_FAULT"
+    ]
+  },
+  "DEMO-benign_transient": {
+    "scenario": "benign_transient",
+    "kind": "benign_transients",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH",
+    "detect_level": "WARNING",
+    "expected_reasons": []
+  },
+  "DEMO-hot_ambient_day": {
+    "scenario": "hot_ambient_day",
+    "kind": "hot_ambient",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": "2026-09-09 09:36:00+00:00",
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH",
+    "detect_level": "WARNING",
+    "expected_reasons": []
+  },
+  "DEMO-normal_operation": {
+    "scenario": "normal_operation",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "LV_PANEL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH",
+    "detect_level": "WARNING",
+    "expected_reasons": []
+  },
+  "DEMO-normal_operation_mv": {
+    "scenario": "normal_operation_mv",
+    "kind": "normal",
+    "rated_a": 400.0,
+    "profile": "MV_CELL",
+    "onset": null,
+    "failure": null,
+    "expected_condition": "NONE",
+    "expected_max_status": "WATCH",
+    "detect_level": "WARNING",
+    "expected_reasons": []
+  }
+}

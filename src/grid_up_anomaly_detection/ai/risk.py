@@ -12,7 +12,9 @@ import pandas as pd
 from .reasons import SIGNATURES
 
 STATUSES = ["NORMAL", "WATCH", "WARNING", "CRITICAL"]
-PANEL_RULES = ["ARC_TRIP", "ABS_TEMP_CRITICAL", "OVERLOAD_RULE", "ARC_SYSTEM_ERROR", "CONDENSATION_RULE"]
+# rules that describe the panel itself and therefore lower health (sensor faults / light warnings do not)
+PANEL_RULES = ["ARC_TRIP", "ARC_DETECTED_NO_TRIP", "ABS_TEMP_CRITICAL", "OVERLOAD_RULE", "ARC_SYSTEM_ERROR",
+               "CONDENSATION_RULE"]
 
 
 def ramp(x: pd.Series, lo: float, hi: float) -> pd.Series:

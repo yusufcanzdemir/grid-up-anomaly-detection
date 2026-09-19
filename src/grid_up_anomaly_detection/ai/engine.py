@@ -66,10 +66,15 @@ class RiskEngine:
         buf["timestamp"] = pd.to_datetime(buf["timestamp"], utc=True)
         buf = buf[buf["timestamp"] >= buf["timestamp"].iloc[-1] - pd.Timedelta(hours=BUFFER_HOURS)]
         self.buffers[mid] = buf.reset_index(drop=True)
+        # channels this module has ever reported: a sensor dead for longer than the buffer is still faulty
+        installed = set((self.state.get(mid) or {}).get("installed_channels", ()))
+        installed.update(c for c in MONITORED_CHANNELS if not pd.isna(reading.get(c, np.nan)))
+        self.buffers[mid].attrs["installed_channels"] = sorted(installed)
         scored = self.score(self.buffers[mid])
         # status hysteresis must be continuous across calls -> recompute only the last point with kept state
         st, self.state[mid] = risk_mod.status_with_hysteresis(
             scored.index[-1:], scored["risk"].to_numpy()[-1:], self.cfg, self.state.get(mid))
+        self.state[mid]["installed_channels"] = sorted(installed)
         scored.iloc[-1, scored.columns.get_loc("status_code")] = st[0]
         scored.iloc[-1, scored.columns.get_loc("status")] = risk_mod.STATUSES[st[0]]
         return self.output(scored, mid)
@@ -106,7 +111,9 @@ class RiskEngine:
         ttc = self._time_to_critical(row)
         status = str(row["status"])
         dq_faults = [c[6:] for c in scored.columns if c.startswith("fault_") and bool(row[c])]
-        missing = [c for c in MONITORED_CHANNELS if c in scored and pd.isna(row.get(c, np.nan))]
+        # installed channels (reported in the buffer, or known faulty) with no value in this sample
+        missing = [c for c in MONITORED_CHANNELS if f"raw_{c}" in scored and pd.isna(row[f"raw_{c}"])
+                   and (c in dq_faults or scored[f"raw_{c}"].notna().any())]
         return {
             "schema_version": SCHEMA_VERSION,
             "module_id": module_id,

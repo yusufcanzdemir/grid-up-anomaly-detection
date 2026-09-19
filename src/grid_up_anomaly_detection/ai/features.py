@@ -46,7 +46,9 @@ def rolling_slope(y: pd.Series, window: str, dt_min: float = 1.0, min_frac: floa
     return ((mxy - mx * my) / var.where(var > 1e-6)).astype(float)
 
 
-def _sensor_health(df: pd.DataFrame, cfg: dict, dt_min: float) -> pd.DataFrame:
+def _sensor_health(df: pd.DataFrame, cfg: dict, dt_min: float, known: set[str] = frozenset()) -> pd.DataFrame:
+    """`known`: channels this module has reported before (streaming). A sensor that died longer ago than
+    the rolling buffer has no values left in it and must still count as installed, i.e. as faulty."""
     f = cfg["features"]
     floor = f.get("stuck_min_samples", 12)
     # widen the window if the cadence is coarse, so "stuck" always means at least `floor` samples
@@ -56,7 +58,7 @@ def _sensor_health(df: pd.DataFrame, cfg: dict, dt_min: float) -> pd.DataFrame:
     out = pd.DataFrame(index=df.index)
     for c in MONITORED_CHANNELS:
         s = df[c]
-        installed = s.notna().cummax().astype(bool)  # once a channel has been seen, losing it is a fault
+        installed = s.notna().cummax().astype(bool) | (c in known)  # once seen, losing it is a fault
         missing = s.isna().astype(float).rolling("30min", min_periods=1).mean() > 0.5
         stuck = (s.rolling(w, min_periods=need).std() < f["stuck_std_eps"])
         if c.startswith("current") or c.startswith("pd_"):
@@ -67,12 +69,13 @@ def _sensor_health(df: pd.DataFrame, cfg: dict, dt_min: float) -> pd.DataFrame:
 
 def build_features(df: pd.DataFrame, bl: ModuleBaseline | None, cfg: dict) -> pd.DataFrame:
     f = cfg["features"]
+    known = set(df.attrs.get("installed_channels", ()))
     df = df.set_index(pd.DatetimeIndex(df["timestamp"])).sort_index()
     t = minutes_since_start(df.index)
     rated = bl.rated_a if bl else float(df.attrs.get("rated_a", 400.0))
     dt_min = sampling_minutes(df.index)
     F = pd.DataFrame(index=df.index)
-    health = _sensor_health(df, cfg, dt_min)
+    health = _sensor_health(df, cfg, dt_min, known)
     F = F.join(health)
 
     # --- spike-filtered temperatures (median filter removes single-sample EMI spikes)
@@ -176,7 +179,7 @@ def build_features(df: pd.DataFrame, bl: ModuleBaseline | None, cfg: dict) -> pd
         F[f"raw_{c}"] = df[c]
 
     # --- data quality
-    profile_cols = [c for c in MONITORED_CHANNELS if df[c].notna().any()]
+    profile_cols = [c for c in MONITORED_CHANNELS if df[c].notna().any() or c in known]
     F["completeness"] = df[profile_cols].notna().mean(axis=1) if profile_cols else 0.0
     F["baseline_valid"] = bool(bl.valid) if bl else False
     return F

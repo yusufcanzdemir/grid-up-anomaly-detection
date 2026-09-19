@@ -1,7 +1,7 @@
 from grid_up_anomaly_detection.communication.telegram.bot import get_updates, answer_callback, edit_message
 from grid_up_anomaly_detection.communication.telegram.formatters import format_alarm_message
 from grid_up_anomaly_detection.communication.telegram.ui import get_main_keyboard
-from grid_up_anomaly_detection.models import AlarmStatus
+from grid_up_anomaly_detection.models import AlarmLifecycle
 from grid_up_anomaly_detection.communication.email.gmail import notify_email
 
 ACTIVE_ALARMS = {}
@@ -15,7 +15,7 @@ def notify_backend(alarm, action):
     # Durum değişikliğini (çözüldü/çözülmedi/yanlış ihbar) e-posta ile bildir
     # Görev üstlenildi adımında mail atmaya gerek yoksa buraya if ekleyebiliriz,
     # şimdilik tüm durumlarda (veya sadece sonuçlarda) mail atsın.
-    if alarm.status in (AlarmStatus.RESOLVED, AlarmStatus.NOT_RESOLVED, AlarmStatus.FALSE_ALARM):
+    if alarm.status in (AlarmLifecycle.RESOLVED, AlarmLifecycle.NOT_RESOLVED, AlarmLifecycle.FALSE_ALARM):
         notify_email(alarm, is_update=True)
 
 def update_alarm_message(chat_id, message_id, alarm):
@@ -41,22 +41,22 @@ def handle_callback(callback_query):
     alarm = ACTIVE_ALARMS[message_id] 
 
     if action == "take_task":
-        alarm.status = AlarmStatus.ACKNOWLEDGED
+        alarm.status = AlarmLifecycle.ACKNOWLEDGED
         update_alarm_message(chat_id, message_id, alarm)
         notify_backend(alarm, action)
         
     elif action == "resolved":
-        alarm.status = AlarmStatus.RESOLVED
+        alarm.status = AlarmLifecycle.RESOLVED
         update_alarm_message(chat_id, message_id, alarm)
         notify_backend(alarm, action)
         
     elif action == "not_resolved":
-        alarm.status = AlarmStatus.NOT_RESOLVED
+        alarm.status = AlarmLifecycle.NOT_RESOLVED
         update_alarm_message(chat_id, message_id, alarm)
         notify_backend(alarm, action)
         
     elif action == "false_alarm":
-        alarm.status = AlarmStatus.FALSE_ALARM
+        alarm.status = AlarmLifecycle.FALSE_ALARM
         update_alarm_message(chat_id, message_id, alarm)
         notify_backend(alarm, action)
 

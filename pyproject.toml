@@ -13,7 +13,12 @@ dependencies = [
     "python-dotenv (>=1.2.3,<2.0.0)",
     "paho-mqtt (>=2.1.0,<3.0.0)",
     "pymodbus (>=3.15.0,<4.0.0)",
-    "psycopg2-binary (>=2.9.13,<3.0.0)"
+    "psycopg2-binary (>=2.9.13,<3.0.0)",
+    "numpy (<2)",
+    "pandas (<2.2)",
+    "scikit-learn (<1.5)",
+    "joblib (>=1.6.0,<2.0.0)",
+    "pyyaml (>=6.0.3,<7.0.0)"
 ]
 
 [project.optional-dependencies]

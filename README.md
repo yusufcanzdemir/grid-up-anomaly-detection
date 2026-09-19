@@ -25,7 +25,7 @@ saha sensörleri / Modbus (MPR-53CS, TVOC-2) -> kanonik okuma -> AI risk motoru 
                                                          model + sınırlı ML         alarm, SCADA bloğu
 ```
 
-> **Not:** `mqtt_to_db.py` ve ilgili MQTT hatları, yapay zeka (RiskEngine) motorundan tamamen bağımsızdır. Bu hat sadece saha sensörlerinden gelen ham veriyi (raw data) ileride kullanılmak üzere veritabanında (Data Lake) arşivlemek amacıyla bulunur. Anomali tespiti yapmaz.
+> **Not:** `mqtt_to_db.py` ve ilgili MQTT hatları, saha sensörlerinden gelen ham veriyi (raw data) alır ve yapay zeka (RiskEngine) motoruna iletir (port 8000). Dönen sonuca göre veritabanına (TimescaleDB) arşivler ve eğer risk düzeyi gerektiriyorsa Mail ve Telegram üzerinden alarm mekanizmasını tetikler.
 
 Backend/monitoring, frontend, SCADA/Modbus entegrasyonu ve donanım dokümantasyonu içerik oluştukça kendi klasörlerine eklenecek. Geliştirme kuralları: [SKILLS.md](SKILLS.md).
 
@@ -76,9 +76,23 @@ poetry run python src/grid_up_anomaly_detection/ai/scripts/scale_test.py --modul
 poetry run python src/grid_up_anomaly_detection/ai/scripts/audit_data.py           # only with the organizer workbook (GRIDUP_SUPPLIED_EXCEL)
 ```
 
-Live demo (after the pipeline):
+### Uçtan Uca Sistemi Başlatma ve Test (Canlı Demo)
 
+Sistemi tam kapasite (Veritabanı, AI, SCADA, Telegram, MQTT) test etmek için sırasıyla 4 farklı terminalde şu komutları çalıştırın:
+
+1. **Altyapı (Sadece 1 Kere):** Veritabanı ve MQTT broker'ını arka planda başlatır.
 ```bash
-poetry run uvicorn grid_up_anomaly_detection.ai.service.app:app --port 8000
-poetry run python src/grid_up_anomaly_detection/ai/scripts/replay.py --scenario loose_connection --speed 600
+docker-compose up -d
+```
+2. **Ana Sistem (AI + Modbus + Bot):** FastAPI (8000), SCADA Modbus sunucusunu (5020) ve Telegram botunu başlatır.
+```bash
+poetry run python src/grid_up_anomaly_detection/main.py
+```
+3. **MQTT-DB Köprüsü:** Sahadan gelen verileri dinler, AI motoruna iletir ve alarm (Telegram/Mail) üretir.
+```bash
+poetry run python src/grid_up_anomaly_detection/mqtt_to_db.py
+```
+4. **Veri Simülasyonu:** Alarm mekanizmalarını test etmek için MQTT üzerinden düzenli sahte anomali (aşırı akım/ısınma) verisi basar.
+```bash
+poetry run python src/grid_up_anomaly_detection/simulate_mqtt.py
 ```

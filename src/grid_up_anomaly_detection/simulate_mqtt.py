@@ -8,7 +8,7 @@ MQTT_PORT = 1883
 MQTT_TOPIC = "factory/panel_anomali/telemetry"
 
 def simulate_mqtt_data():
-    client = mqtt.Client()
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     
     print("MQTT üzerinden sahte veri gönderimi başladı (Her 3 saniyede 1)...")

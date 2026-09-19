@@ -1,8 +1,8 @@
-from grid_up_anomaly_detection.models import AlarmStatus
+from grid_up_anomaly_detection.models import AlarmLifecycle
 
 def get_main_keyboard(status):
     # Kritik veya Çözülemedi durumlarında "Görevi Üstlen" butonu çıksın
-    if status in (AlarmStatus.CRITICAL, AlarmStatus.NOT_RESOLVED):
+    if status in (AlarmLifecycle.CRITICAL, AlarmLifecycle.NOT_RESOLVED):
         return {
             "inline_keyboard": [
                 [{"text": "🛠 Görevi Üstlen", "callback_data": "take_task"}]
@@ -10,7 +10,7 @@ def get_main_keyboard(status):
         }
         
     # Görev üstlenildiğinde çözüm seçenekleri çıksın
-    if status == AlarmStatus.ACKNOWLEDGED:
+    if status == AlarmLifecycle.ACKNOWLEDGED:
         return {
             "inline_keyboard": [
                 [{"text": "✅ Çözüldü", "callback_data": "resolved"}],

@@ -1,12 +1,12 @@
-from grid_up_anomaly_detection.models import AlarmStatus
+from grid_up_anomaly_detection.models import AlarmLifecycle
 
 def format_alarm_message(alarm):
     workflow_text = {
-        AlarmStatus.CRITICAL: "🔴 Beklemede (Müdahale Edilmedi)",
-        AlarmStatus.ACKNOWLEDGED: "🟡 Görev Üstlenildi",
-        AlarmStatus.RESOLVED: "🟢 Çözüldü",
-        AlarmStatus.NOT_RESOLVED: "❌ Çözülmedi",
-        AlarmStatus.FALSE_ALARM: "🚫 Yanlış İhbar",
+        AlarmLifecycle.CRITICAL: "🔴 Beklemede (Müdahale Edilmedi)",
+        AlarmLifecycle.ACKNOWLEDGED: "🟡 Görev Üstlenildi",
+        AlarmLifecycle.RESOLVED: "🟢 Çözüldü",
+        AlarmLifecycle.NOT_RESOLVED: "❌ Çözülmedi",
+        AlarmLifecycle.FALSE_ALARM: "🚫 Yanlış İhbar",
     }
 
     ai_level = alarm.ai_status.upper() if alarm.ai_status else "BİLİNMİYOR"

@@ -3,7 +3,7 @@ import time
 import requests
 import psycopg2
 import paho.mqtt.client as mqtt
-from grid_up_anomaly_detection.models import Alarm, AlarmStatus
+from grid_up_anomaly_detection.models import Alarm, AlarmLifecycle
 from grid_up_anomaly_detection.communication.telegram.bot import send_telegram_alert
 from grid_up_anomaly_detection.communication.telegram.listener import ACTIVE_ALARMS
 import threading
@@ -24,7 +24,7 @@ MQTT_PORT = 1883
 MQTT_TOPIC = "factory/panel_anomali/telemetry"
 
 # AI Backend API (Kişi 1'in yazdığı FastAPI)
-API_URL = "http://localhost:9090/ingest"
+API_URL = "http://localhost:8000/ingest"
 
 def init_db():
     try:
@@ -70,17 +70,26 @@ def on_message(client, userdata, msg):
             print(f"AI Analizi -> Risk Skoru: {risk_score} | Status Code: {status_code}")
             
             # 2. Alarm kontrolü (Durum Makinesi / Telegram)
-            if status_code >= 2: # 2 = WARNING, 3 = CRITICAL
+            notify = ai_result.get("notify", {})
+            priority = notify.get("priority", "none")
+            
+            if priority in ["high", "medium"] or status_code >= 2:
+                # Sadece Mail ve Telegram destekleniyor.
+                suspected_cond = ai_result.get("suspected_condition") or {}
                 alarm = Alarm(
                     id=int(time.time()),
                     panel=payload.get("panel_id", "P-Bilinmeyen"),
                     location=payload.get("site_id", "Bilinmeyen Saha"),
-                    error=ai_result.get("condition_code", "Bilinmeyen Hata"),
+                    error=suspected_cond.get("code", "Bilinmeyen Hata"),
                     temperature=payload.get("temp_internal_c", 0.0),
                     voltage=400.0,
                     current=payload.get("current_l1_a", 0.0),
                     fan=False,
-                    humidity=payload.get("humidity_internal_pct", 0)
+                    humidity=payload.get("humidity_internal_pct", 0),
+                    status=AlarmLifecycle.CRITICAL,
+                    ai_status=ai_result.get("status", ""),
+                    suspected_condition=suspected_cond.get("code", ""),
+                    reasons=[r.get("code") for r in ai_result.get("reasons", [])]
                 )
                 
                 # Telegram mesajı gönder ve hafızaya al
@@ -108,12 +117,8 @@ def on_message(client, userdata, msg):
 if __name__ == "__main__":
     init_db()
     
-    # Telegram Listener'ı arka planda başlat
-    listener_thread = threading.Thread(target=start_telegram_listener, daemon=True)
-    listener_thread.start()
-    
     # MQTT İstemcisi Başlat
-    client = mqtt.Client()
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
     client.on_connect = on_connect
     client.on_message = on_message
     

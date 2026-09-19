@@ -2,7 +2,7 @@ import base64
 import requests
 from email.mime.text import MIMEText
 from grid_up_anomaly_detection.config import config
-from grid_up_anomaly_detection.models import AlarmStatus
+from grid_up_anomaly_detection.models import AlarmLifecycle
 
 def refresh_access_token():
     url = "https://oauth2.googleapis.com/token"
@@ -49,11 +49,11 @@ def send_gmail(subject, body):
 
 def notify_email(alarm, is_update=False):
     status_text = {
-        AlarmStatus.CRITICAL: "🔴 KRİTİK ALARM",
-        AlarmStatus.ACKNOWLEDGED: "🟡 GÖREV ÜSTLENİLDİ",
-        AlarmStatus.RESOLVED: "🟢 ÇÖZÜLDÜ",
-        AlarmStatus.NOT_RESOLVED: "❌ ÇÖZÜLMEDİ",
-        AlarmStatus.FALSE_ALARM: "🚫 YANLIŞ İHBAR",
+        AlarmLifecycle.CRITICAL: "🔴 KRİTİK ALARM",
+        AlarmLifecycle.ACKNOWLEDGED: "🟡 GÖREV ÜSTLENİLDİ",
+        AlarmLifecycle.RESOLVED: "🟢 ÇÖZÜLDÜ",
+        AlarmLifecycle.NOT_RESOLVED: "❌ ÇÖZÜLMEDİ",
+        AlarmLifecycle.FALSE_ALARM: "🚫 YANLIŞ İHBAR",
     }
     
     status_msg = status_text.get(alarm.status, "BİLİNMİYOR")

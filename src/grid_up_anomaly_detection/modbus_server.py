@@ -10,9 +10,10 @@ from pymodbus import ModbusDeviceIdentification
 # AI API'den (veya DB'den) veri çekilecek endpoint (Örn: Pano 1)
 SCADA_API_URL = "http://localhost:8000/scada/M-001"
 
+# 100 modül için 3200 register (100 * 32)
 store = ModbusSlaveContext(
-    hr=ModbusSequentialDataBlock(1000, [0] * 32),
-    ir=ModbusSequentialDataBlock(1000, [0] * 32)
+    hr=ModbusSequentialDataBlock(1000, [0] * 3200),
+    ir=ModbusSequentialDataBlock(1000, [0] * 3200)
 )
 context = ModbusServerContext(devices=store, single=True)
 
@@ -20,18 +21,27 @@ async def update_modbus_data():
     """Her saniye API'den (veya DB'den) veriyi okuyup Modbus belleğini günceller."""
     while True:
         try:
-            # Not: requests senkron bir kütüphane olsa da arka planda küçük bir veri çektiği için 
-            # asenkron döngüyü çok yormayacaktır. Daha büyük projelerde aiohttp tercih edilebilir.
-            response = requests.get(SCADA_API_URL, timeout=2)
-            if response.status_code == 200:
-                data = response.json()
-                raw_registers = data.get("raw", [])
+            # Tüm modülleri al
+            modules_res = requests.get("http://localhost:8000/modules", timeout=2)
+            if modules_res.status_code == 200:
+                modules = modules_res.json().get("modules", [])
                 
-                if raw_registers:
-                    # Modbus Slave 0 (single=True olduğu için id 0), Input(3) ve Holding(4) Register
-                    await context.async_setValues(0, 3, 1000, raw_registers)
-                    await context.async_setValues(0, 4, 1000, raw_registers)
-                    print(f"Modbus verileri güncellendi: {raw_registers[:5]}...")
+                # Her bir modül için SCADA verisini al ve Modbus belleğine yaz
+                for idx, mod in enumerate(modules):
+                    module_id = mod.get("module_id")
+                    if not module_id:
+                        continue
+                        
+                    scada_res = requests.get(f"http://localhost:8000/scada/{module_id}?module_index={idx}", timeout=2)
+                    if scada_res.status_code == 200:
+                        data = scada_res.json()
+                        raw_registers = data.get("raw", [])
+                        base_address = data.get("base_address", 1000 + (idx * 32))
+                        
+                        if raw_registers:
+                            await context.async_setValues(0, 3, base_address, raw_registers)
+                            await context.async_setValues(0, 4, base_address, raw_registers)
+                            
         except requests.exceptions.ConnectionError:
             pass # API Kapalı, hatayı yut
         except Exception as e:

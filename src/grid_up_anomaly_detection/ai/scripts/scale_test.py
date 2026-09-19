@@ -3,13 +3,12 @@
 Buffers are pre-filled directly (that is just data), then we measure real `engine.update()` calls -
 the same code path the API uses.
 
-    python ai/scripts/scale_test.py --modules 100 --samples 10
+    python src/grid_up_anomaly_detection/ai/scripts/scale_test.py --modules 100 --samples 10
 """
 from __future__ import annotations
 
 import argparse
 import json
-import resource
 import statistics
 import sys
 import time
@@ -23,10 +22,35 @@ from grid_up_anomaly_detection.ai.ml import MLDetector
 from grid_up_anomaly_detection.ai.schema import CANONICAL_COLUMNS
 
 
+######
 def max_rss_mb() -> float:
-    """ru_maxrss is bytes on macOS and kilobytes on Linux."""
+    """Peak resident memory, in MB. `resource` is POSIX-only, so Windows goes through ctypes."""
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        class _Counters(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                        ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
+                        ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                        ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+        psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(_Counters), wintypes.DWORD]
+        psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
+        c = _Counters()
+        c.cb = ctypes.sizeof(c)
+        if psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(c), c.cb):
+            return c.PeakWorkingSetSize / 1e6
+        return float("nan")
+    import resource  # noqa: PLC0415 - POSIX only
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    # ru_maxrss is bytes on macOS and kilobytes on Linux
     return rss / 1e6 if sys.platform == "darwin" else rss / 1e3
+
 
 
 def main() -> None:

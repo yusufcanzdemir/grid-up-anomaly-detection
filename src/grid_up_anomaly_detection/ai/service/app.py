@@ -12,6 +12,7 @@ import threading
 import time
 from typing import Any
 
+import numpy as np
 import pandas as pd
 from fastapi import Body, FastAPI, HTTPException, Query
 from pydantic import BaseModel
@@ -20,7 +21,12 @@ from grid_up_anomaly_detection.ai.baseline import load_baselines
 from grid_up_anomaly_detection.ai.config import MODELS_DIR, SYNTH_DIR, load_config
 from grid_up_anomaly_detection.ai.engine import RiskEngine
 from grid_up_anomaly_detection.ai.ml import MLDetector
-from grid_up_anomaly_detection.ai.modbus_maps import SCADA_BLOCK_SIZE, SCADA_REGISTERS, build_scada_block, module_base_address
+from grid_up_anomaly_detection.ai.modbus_maps import (
+    SCADA_BLOCK_SIZE,
+    SCADA_REGISTERS,
+    build_scada_block,
+    module_base_address,
+)
 from grid_up_anomaly_detection.ai.observability import format_tick
 from grid_up_anomaly_detection.ai.schema import CANONICAL_COLUMNS
 
@@ -62,6 +68,8 @@ class Reading(BaseModel):
     pd_count_per_min: float | None = None
     pd_peak_mv: float | None = None
     arc_trip_active: float | None = 0
+    arc_detected_no_trip: float | None = 0
+    arc_trip_relays: float | None = 0
     arc_trip_count: float | None = 0
     arc_system_error: float | None = 0
     arc_light_warning: float | None = 0
@@ -136,6 +144,10 @@ class EngineService:
             raise HTTPException(404, f"scenario '{scenario}' not generated; run scripts/generate_synthetic.py")
         df = pd.read_csv(path, parse_dates=["timestamp"])
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+        # a scenario file generated before a channel was added must still replay
+        for c in CANONICAL_COLUMNS:
+            if c not in df:
+                df[c] = np.nan
         return df
 
     def prime(self, scenario: str, module_id: str, until: str | None = None, hours: float = PRIME_HOURS,

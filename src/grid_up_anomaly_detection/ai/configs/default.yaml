@@ -11,6 +11,20 @@ sampling:
   # reference only: features derive the cadence from the data (features.sampling_minutes)
   interval_s: 60                      # [ASSUMPTION] canonical 1-min grid; thermal time constants are 15-90 min
 
+######
+# Field sensor selection. Reference only - no code reads this block; it exists so a threshold can be
+# traced back to the sensor that has to be able to reach it.
+field_sensors:
+  current:                            # [DECISION] MPR-53CS over Modbus RTU; clamp CT rejected
+    source: MPR-53CS                  # panel spec TEDAS-MLZ/2003-06.B 2.2.11 already mandates it
+  lug_temperature:                    # [DECISION] wireless tag with an EXTERNAL probe
+    probe: PT1000_or_thermocouple
+    min_range_c: 125                  # must clear rules.abs_temp_critical_c (90) and evidence hi (95)
+  cabinet_temp_humidity: SHT31        # [DECISION] I2C, PTFE-filtered port on the enclosure wall
+  ambient_temp: UNDECIDED             # temp_ambient_c is optional; channel stays NaN until decided
+  arc: TVOC-2-COM                     # [DOC] already in the panel, read-only over Modbus RTU
+  partial_discharge: HFCT30_or_HFCT50 # [DOC] MV_CELL profile only; needs an analog peak-detector front end
+
 sensors:                              # read by scripts/audit_data.py
   excel_current:                      # [DOC] Istenen Veriler.xlsx / "Akim Sensoru" sheet
     secondary_full_scale_ma: 100      # [DOC] "Sekonderi 100mA"
@@ -23,6 +37,12 @@ sensors:                              # read by scripts/audit_data.py
 panel:                                # 1600 kVA LV panel (TEDAS-MLZ/2003-06.B); only feeder_rated_a is read by code
   main_bus_rated_a: 2312              # [DOC] Tablo 3a
   feeder_rated_a: 400                 # [DOC] Tablo 8, DSYA 2-Boy 400 A (1600 kVA column)
+  ######
+  # [DECISION] one "module" = one monitored feeder (3 phases); demo instruments a single feeder.
+  # Tablo 8: 5 outgoing DSYA feeders + 2 spare for the 1600 kVA column.
+  monitored_feeders_demo: 1
+  feeders_available: 7
+  
   ambient_max_c: 40                   # [DOC] Tablo 1 (indoor)
   ambient_24h_mean_max_c: 35          # [DOC] Tablo 1
   ambient_min_c: -5                   # [DOC] Tablo 1 (indoor)
@@ -93,8 +113,12 @@ rules:
   arc_trip_floor: 1.00
   arc_latch_min: 60
   arc_system_error_floor: 0.60        # protection unavailable -> WARNING
+  ######
+  # [DOC] both arc modes are carried. Mode 1 floor sits in the CRITICAL band but below a real trip:
+  # an arc happened and the breaker is still closed. Derivation is [ASSUMPTION], see schema.py.
+  arc_detected_no_trip_floor: 0.85
   arc_light_warning_floor: 0.30
-  abs_temp_critical_c: 90.0           # [PLACEHOLDER]
+  abs_temp_critical_c: 125.0          # [PLACEHOLDER]
   abs_temp_critical_floor: 0.85
   theta_hold_min: 20                  # thermal image must STAY above the limit; a brief pickup is not an alarm
   theta_warning: 1.0                  # [PLACEHOLDER] thermal image at rated state

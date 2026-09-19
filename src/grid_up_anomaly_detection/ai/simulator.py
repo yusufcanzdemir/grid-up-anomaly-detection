@@ -195,8 +195,14 @@ def simulate(scn: Scenario, mp: ModuleParams | None = None, seed: int = 42,
         t_arc = onset if scn.kind == "sudden_arc" else fail
         arc_active[t_d >= t_arc] = 1
         arc_count[t_d >= t_arc] = 1
+    # mode 1: arc detected, trip circuit not fired -> breaker stays closed, currents keep flowing
+    arc_no_trip = np.zeros(n)
+    if scn.kind == "arc_no_trip" and np.isfinite(onset):
+        arc_no_trip[t_d >= onset] = 1
     df["arc_trip_active"] = arc_active
     df["arc_trip_count"] = arc_count
+    df["arc_detected_no_trip"] = arc_no_trip
+    df["arc_trip_relays"] = np.where(arc_active > 0, 1.0, 0.0)
     df["arc_system_error"] = 0.0
     df["arc_light_warning"] = 0.0
 
@@ -219,7 +225,7 @@ def simulate(scn: Scenario, mp: ModuleParams | None = None, seed: int = 42,
     df["gt_scenario"] = scn.name
     df["gt_anomaly"] = (not benign) and (t_d >= onset)
     df["gt_failure"] = t_d >= fail if np.isfinite(fail) else False
-    if scn.kind == "sudden_arc":
+    if scn.kind in ("sudden_arc", "arc_no_trip"):
         df["gt_failure"] = t_d >= onset
     df.attrs.update(scenario=scn.name, kind=scn.kind, onset=ts[0] + pd.Timedelta(days=onset) if np.isfinite(onset) else None,
                     failure=ts[0] + pd.Timedelta(days=fail) if np.isfinite(fail) else None, rated_a=mp.rated_a)
@@ -227,7 +233,7 @@ def simulate(scn: Scenario, mp: ModuleParams | None = None, seed: int = 42,
 
 
 def scenario_library() -> list[Scenario]:
-    """Scenarios defensible from the supplied material (see docs/AI_DESIGN.md, scenario matrix)."""
+    """Scenarios defensible from the supplied material (scenario matrix in docs/scada_mapping.md)."""
     return [
         Scenario("loose_connection", "loose_connection", days=13, onset_day=8, failure_day=12.6,
                  expected_condition="LOOSE_CONNECTION", phase=1,
@@ -245,6 +251,10 @@ def scenario_library() -> list[Scenario]:
                  expected_reasons=("PD_ACTIVITY", "PD_TREND")),
         Scenario("arc_event", "sudden_arc", days=10, onset_day=9.3, expected_condition="ARC_FLASH",
                  expected_reasons=("ARC_TRIP",)),
+        # arc detected without a trip: breaker stays closed, load keeps flowing, still CRITICAL
+        Scenario("arc_detected_no_trip", "arc_no_trip", days=10, onset_day=9.3,
+                 expected_condition="ARC_FLASH", detect_level="CRITICAL",
+                 expected_reasons=("ARC_DETECTED_NO_TRIP",)),
         # a dead sensor must be reported, but it is an operations issue - WATCH is the correct ceiling
         Scenario("sensor_failure", "sensor_fault", days=12, onset_day=8.5, expected_condition="SENSOR_FAULT",
                  phase=2, detect_level="WATCH", expected_reasons=("SENSOR_FAULT",)),

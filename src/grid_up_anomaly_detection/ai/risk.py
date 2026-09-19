@@ -36,6 +36,9 @@ def rule_floors(F: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     latch = F["arc_trip_new"].rolling(f"{r['arc_latch_min']}min", min_periods=1).max() > 0
     fl["ARC_TRIP"] = np.where((F["arc_trip_active"] > 0) | latch, r["arc_trip_floor"], 0.0)
     fl["ARC_SYSTEM_ERROR"] = np.where(F["arc_system_error"] > 0, r["arc_system_error_floor"], 0.0)
+    # arc seen, trip circuit not fired: latched like a trip but at a lower floor
+    no_trip_latch = F["arc_detected_no_trip"].rolling(f"{r['arc_latch_min']}min", min_periods=1).max() > 0
+    fl["ARC_DETECTED_NO_TRIP"] = np.where(no_trip_latch, r["arc_detected_no_trip_floor"], 0.0)
     fl["ARC_LIGHT_WARNING"] = np.where(F["arc_light_warning"] > 0, r["arc_light_warning_floor"], 0.0)
     tmin5 = F["temp_max_f"].rolling("5min", min_periods=1).min()
     fl["ABS_TEMP_CRITICAL"] = np.where(tmin5 >= r["abs_temp_critical_c"], r["abs_temp_critical_floor"], 0.0)
@@ -108,6 +111,7 @@ def diagnose(eff: pd.DataFrame, floors: pd.DataFrame) -> tuple[pd.Series, pd.Ser
     cond = top.where(best >= 0.15, "NONE")
     cond = cond.where(~((cond == "NONE") & (floors["SENSOR_FAULT"] > 0)), "SENSOR_FAULT")
     cond = cond.where(floors["ARC_SYSTEM_ERROR"] == 0, "PROTECTION_UNAVAILABLE")
+    cond = cond.where(floors["ARC_DETECTED_NO_TRIP"] == 0, "ARC_FLASH")
     cond = cond.where(floors["ARC_TRIP"] == 0, "ARC_FLASH")
     conf = conf.where(~cond.isin(["ARC_FLASH", "PROTECTION_UNAVAILABLE", "SENSOR_FAULT"]), 1.0)
     return cond, conf.round(2)

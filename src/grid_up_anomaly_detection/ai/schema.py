@@ -11,16 +11,16 @@ ID_COLUMNS = ["timestamp", "site_id", "panel_id", "module_id", "profile"]
 
 # column -> (unit, source)
 CHANNELS: dict[str, tuple[str, str]] = {
-    # electrical: MPR-53CS energy analyzer (Modbus RTU, already mandated by the panel spec) or clamp CT
-    "current_l1_a": ("A", "MPR-53CS reg 6 / clamp CT"),
-    "current_l2_a": ("A", "MPR-53CS reg 8 / clamp CT"),
-    "current_l3_a": ("A", "MPR-53CS reg 10 / clamp CT"),
+    # electrical: MPR-53CS energy analyzer (Modbus RTU, already mandated by the panel spec)
+    "current_l1_a": ("A", "MPR-53CS reg 6"),
+    "current_l2_a": ("A", "MPR-53CS reg 8"),
+    "current_l3_a": ("A", "MPR-53CS reg 10"),
     "current_n_a": ("A", "MPR-53CS reg 12"),
     "current_thd_pct": ("%", "MPR-53CS reg 78-82 (max of phases)"),
     # thermal: new module sensors
-    "temp_l1_c": ("degC", "connection/lug surface sensor L1"),
-    "temp_l2_c": ("degC", "connection/lug surface sensor L2"),
-    "temp_l3_c": ("degC", "connection/lug surface sensor L3"),
+    "temp_l1_c": ("degC", "connection/lug surface sensor L1, external probe, >=125 degC range"),
+    "temp_l2_c": ("degC", "connection/lug surface sensor L2, external probe, >=125 degC range"),
+    "temp_l3_c": ("degC", "connection/lug surface sensor L3, external probe, >=125 degC range"),
     "temp_internal_c": ("degC", "cabinet air sensor"),
     "humidity_internal_pct": ("%RH", "cabinet air sensor"),
     "temp_ambient_c": ("degC", "room / outside-cabinet sensor (optional)"),
@@ -29,6 +29,10 @@ CHANNELS: dict[str, tuple[str, str]] = {
     "pd_peak_mv": ("mV", "HFCT max pulse amplitude @50 ohm"),
     # arc: ABB TVOC-2-COM (Modbus RTU)
     "arc_trip_active": ("bool", "TVOC-2 reg 1300 bit0"),
+    # Arc mode 1: detected, trip circuit not fired. No mode register exists in the manual, so the
+    # field module derives it from reg 210/211 non-zero while reg 212 == 0. Verify on real hardware.
+    "arc_detected_no_trip": ("bool", "TVOC-2 reg 210/211 set while reg 212 == 0 [ASSUMPTION]"),
+    "arc_trip_relays": ("bitfield", "TVOC-2 reg 212, bit0=K4 bit1=K5 bit2=K6"),
     "arc_trip_count": ("count", "TVOC-2 reg 149"),
     "arc_system_error": ("bool", "TVOC-2 reg 1300 bit1"),
     "arc_light_warning": ("bool", "TVOC-2 reg 224/225"),

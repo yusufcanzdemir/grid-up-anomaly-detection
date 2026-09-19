@@ -167,6 +167,7 @@ def build_features(df: pd.DataFrame, bl: ModuleBaseline | None, cfg: dict) -> pd
     # --- arc events (TVOC-2)
     F["arc_trip_active"] = df["arc_trip_active"].fillna(0)
     F["arc_trip_new"] = (df["arc_trip_count"].ffill().diff().fillna(0) > 0).astype(float)
+    F["arc_detected_no_trip"] = df["arc_detected_no_trip"].fillna(0)
     F["arc_system_error"] = df["arc_system_error"].fillna(0)
     F["arc_light_warning"] = df["arc_light_warning"].fillna(0)
 

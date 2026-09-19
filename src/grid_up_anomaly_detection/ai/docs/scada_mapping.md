@@ -5,7 +5,7 @@
 > taken from any supplied document, and it must be reviewed by the DSO before any field use.
 > No connection to a real SCADA system is made anywhere in this repository.
 
-Implementation: `ai/src/grid_up_anomaly_detection.ai/modbus_maps.py`. Live encoding of any module: `GET /scada/{module_id}`.
+Implementation: `src/grid_up_anomaly_detection/ai/modbus_maps.py`. Live encoding of any module: `GET /scada/{module_id}`.
 
 ---
 
@@ -26,7 +26,7 @@ current measurement needs no new sensor and no new CT in the panel**.
 | 58 | Frequency | Hz | 0.01 | context |
 | 32769 (0x8001) | Current transformer ratio | – | 1 | scaling |
 
-Open questions (both unspecified in the map, flagged in `AI_DESIGN.md`): 32-bit **word order**, and
+Open questions (both unspecified in the map, tracked in `DEGISIKLIK.md`): 32-bit **word order**, and
 whether the value is already multiplied by the CT ratio.
 
 ### A.2 ABB TVOC-2-COM arc guard — Modbus RTU (RS485)
@@ -39,12 +39,20 @@ Source: `1SFC170017M0201 Rev D`. Default 19200 8E1, slave ID 248 means *communic
 | 1300 | System state (bit0 trip active, bit1 error active, bit2 start sequence, bit3 diagnostics running) | `ARC_TRIP`, `ARC_SYSTEM_ERROR` |
 | 149 | Number of trips | catches trips that occurred between polls |
 | 206 / 210 / 211 | Diagnostics trip + detector bitfields (X1:1–X3:10) | which cubicle saw the arc |
+| 212 | Diagnostics trip relay (bit0 K4, bit1 K5, bit2 K6 — manual 4.4.1.3) | `ARC_DETECTED_NO_TRIP`: detectors set while no relay operated |
 | 222 / 223 | Sensor status X2 / X3 (1 = OK) | detector health |
 | 224 / 225 | Ambient light warning X2 / X3 | `ARC_LIGHT_WARNING` (door open / light source) |
 | 1301–1306 | Active diagnostic trouble codes | shown with the protection-unavailable alarm |
 
 ⚠️ The manual documents the ambient-light polarity inconsistently (§4.4.2 vs §4.4.3.8); confirm on a
 real device before trusting that bit.
+
+⚠️ **Arc mode 1 is an inference, not a documented register.** The DSO asked for both arc modes
+("caught but did not trip" and "caught and tripped") to be carried. The supplied Modbus manual has no
+mode register, so `ARC_DETECTED_NO_TRIP` is derived from *detector words 210/211 non-zero while relay
+word 212 is zero*. §4.4.2 also notes these registers read `0x0000` when there is no active trip record
+at all, so this derivation may not fire on a real device. **Must be verified on real hardware before
+field use** — until then treat the channel as best-effort and keep `arc_trip_active` authoritative.
 
 **Bus constraint:** Modbus RTU allows exactly one master per RS485 segment. If the OSOS/AMR modem
 already polls these devices, our edge module needs its own port or a Modbus gateway. Unresolved.
@@ -85,7 +93,7 @@ Recommended polling: 1 register block per module every 5–30 s (the engine upda
 | 21 | `thermal_image_pct` | u16 | ×100 | % of rated thermal state (θ) |
 | 22 | `pd_rate_per_min` | u16 | 1 | PD pulses/min (MV_CELL only) |
 | 23 | `pd_peak_mv` | u16 | 1 | PD peak amplitude, mV |
-| 24 | `arc_status` | u16 | 1 | 0 ok, 1 light warning, 2 system error, 3 trip |
+| 24 | `arc_status` | u16 | 1 | 0 ok, 1 light warning, 2 system error, 3 trip, **4 arc detected, trip circuit did not fire** |
 | 25 | `time_to_critical_h` | u16 | ×10 | trend extrapolation, 0.1 h |
 | 26 | `data_completeness_pct` | u16 | ×100 | % of installed channels present |
 | 27–28 | `reason_2_code`, `reason_3_code` | u16 | 1 | supporting reasons, 0 = none |
@@ -106,6 +114,7 @@ A panel with no PD channel therefore reports `0xFFFF`, never `0`, so SCADA canno
 | 3 | sustained overload (thermal image) | 9 | status ≥ CRITICAL |
 | 4 | condensation on surfaces | 10 | ML layer unavailable |
 | 5 | sensor fault | 11 | thermal baseline invalid |
+| | | 12 | arc detected, trip circuit did not fire |
 
 ### B.2 `sensor_health_bitmap` (1 = present and healthy)
 

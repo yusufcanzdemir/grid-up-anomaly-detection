@@ -18,7 +18,7 @@ from .ml import MLDetector
 from .reasons import CONDITION_CODES, CONDITION_LABELS, REASON_CODES, REASON_SOURCES, REASONS, RECOMMENDED_ACTIONS
 from .schema import CANONICAL_COLUMNS, validate
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 BUFFER_HOURS = 26
 NOTIFY = {
     "CRITICAL": {"channels": ["dashboard", "sms", "whatsapp", "scada"], "priority": "high"},
@@ -225,6 +225,7 @@ def _sensor_summary(row: pd.Series, faulty: list[str]) -> dict[str, Any]:
         "partial_discharge": {"rate_per_min": _f(row.get("pd_rate")), "peak_mv": raw("pd_peak_mv"),
                               "status": _group_status(pd_vals, faulty, ["pd_count_per_min"])},
         "arc": {"trip_active": bool(row.get("arc_trip_active", 0)),
+                "detected_no_trip": bool(row.get("arc_detected_no_trip", 0)),
                 "system_error": bool(row.get("arc_system_error", 0)),
                 "light_warning": bool(row.get("arc_light_warning", 0)),
                 "status": "error" if bool(row.get("arc_system_error", 0)) else "ok"},

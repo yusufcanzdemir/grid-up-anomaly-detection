@@ -47,6 +47,7 @@ TVOC2 = {
     "diagnostics_trip": 206,
     "diagnostics_trip_detector_low": 210,
     "diagnostics_trip_detector_high": 211,
+    "diagnostics_trip_relay": 212,   # manual 4.4.1.3: bit0=K4, bit1=K5, bit2=K6 (IGBT outputs)
     "sensor_status_x2": 222,
     "sensor_status_x3": 223,
     "ambient_light_warning_x2": 224,
@@ -76,6 +77,23 @@ def decode_trip_detectors(low: int, high: int) -> list[str]:
     return hits
 
 
+def decode_trip_relays(reg: int) -> list[str]:
+    """Reg 212 / 'Trip x relay' -> which IGBT outputs operated (manual 4.4.1.3)."""
+    return [n for b, n in enumerate(("K4", "K5", "K6")) if reg not in (0xFFFF,) and reg >> b & 1]
+
+
+def arc_detected_without_trip(detector_low: int, detector_high: int, relay: int) -> bool:
+    """[ASSUMPTION] Arc mode 1: detectors named an arc, no output relay operated.
+
+    No mode register exists in the manual, so this is the closest observable. Regs 210-212 read
+    0x0000 when there is no active trip record, so the detector words must be non-zero for this
+    to mean anything. Verify on a real device.
+    """
+    if 0xFFFF in (detector_low, detector_high, relay):
+        return False
+    return bool(detector_low or detector_high) and not decode_trip_relays(relay)
+
+
 def decode_tvoc_datetime(days_since_1970: int, hhmm: int, ss: int = 0) -> dt.datetime:
     return (dt.datetime(1970, 1, 1) + dt.timedelta(days=days_since_1970)).replace(
         hour=hhmm >> 8, minute=hhmm & 0xFF, second=ss)
@@ -91,7 +109,8 @@ NA_UNSIGNED = 0xFFFF       # "value not available"
 NA_SIGNED = 0x8000         # "value not available" for signed fields (-32768)
 
 ALARM_BITS = {"ARC_TRIP": 0, "ARC_SYSTEM_ERROR": 1, "ABS_TEMP_CRITICAL": 2, "OVERLOAD_RULE": 3,
-              "CONDENSATION_RULE": 4, "SENSOR_FAULT": 5, "ARC_LIGHT_WARNING": 6}
+              "CONDENSATION_RULE": 4, "SENSOR_FAULT": 5, "ARC_LIGHT_WARNING": 6,
+              "ARC_DETECTED_NO_TRIP": 12}
 ALARM_BIT_WATCH, ALARM_BIT_WARNING, ALARM_BIT_CRITICAL = 7, 8, 9
 ALARM_BIT_ML_UNAVAILABLE, ALARM_BIT_BASELINE_INVALID = 10, 11
 
@@ -100,6 +119,7 @@ SENSOR_HEALTH_BITS = ["temp_l1_c", "temp_l2_c", "temp_l3_c", "temp_internal_c", 
                       "humidity_internal_pct", "current", "pd", "arc"]
 
 ARC_STATUS_OK, ARC_STATUS_LIGHT, ARC_STATUS_ERROR, ARC_STATUS_TRIP = 0, 1, 2, 3
+ARC_STATUS_DETECTED_NO_TRIP = 4   # arc seen, trip circuit did not fire
 
 
 @dataclass(frozen=True)
@@ -136,7 +156,7 @@ SCADA_REGISTERS: tuple[Register, ...] = (
     Register(21, "thermal_image_pct", 100, False, "% of rated thermal state"),
     Register(22, "pd_rate_per_min", 1, False, "PD pulses/min, NA if no PD channel"),
     Register(23, "pd_peak_mv", 1, False, "mV, NA if no PD channel"),
-    Register(24, "arc_status", 1, False, "0=ok 1=light-warning 2=system-error 3=trip"),
+    Register(24, "arc_status", 1, False, "0=ok 1=light-warning 2=system-error 3=trip 4=detected-no-trip"),
     Register(25, "time_to_critical_h", 10, False, "0.1 h trend extrapolation, NA if not trending"),
     Register(26, "data_completeness_pct", 100, False, "%"),
     Register(27, "reason_2_code", 1, False, "second reason, 0 if none"),
@@ -197,6 +217,8 @@ def _arc_status(payload: dict[str, Any]) -> int:
     arc = payload.get("sensor_summary", {}).get("arc", {})
     if arc.get("trip_active"):
         return ARC_STATUS_TRIP
+    if arc.get("detected_no_trip"):
+        return ARC_STATUS_DETECTED_NO_TRIP
     if arc.get("system_error"):
         return ARC_STATUS_ERROR
     if arc.get("light_warning"):

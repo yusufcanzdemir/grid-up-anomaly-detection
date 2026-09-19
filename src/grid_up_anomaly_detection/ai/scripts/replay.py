@@ -131,4 +131,4 @@ if __name__ == "__main__":
         raise SystemExit(f"API returned {exc.code} for {exc.url}\n{exc.read().decode()[:500]}")
     except urllib.error.URLError as exc:
         raise SystemExit(f"cannot reach the API ({exc.reason}). Start it with:\n"
-                         f"  cd ai && poetry run uvicorn grid_up_anomaly_detection.ai.service.app:app --port 8000")
+                         f"  poetry run uvicorn grid_up_anomaly_detection.ai.service.app:app --port 8000")

@@ -1,4 +1,4 @@
-# Inference contract v1.0 (frozen)
+# Inference contract v1.1 (frozen, additive)
 
 One JSON object per module per inference. Produced by `RiskEngine.update()` / `POST /ingest`, and
 also served by `GET /modules/{id}/latest`. Examples for all four states are generated (not committed)
@@ -14,7 +14,7 @@ by `scripts/evaluate.py` into `ai/reports/sample_outputs.json` → `examples.NOR
 
 | Field | Type | Notes |
 |---|---|---|
-| `schema_version` | string | `"1.0"` |
+| `schema_version` | string | `"1.1"` — 1.1 added `sensor_summary.arc.detected_no_trip` and reason `ARC_DETECTED_NO_TRIP`; nothing was removed or retyped |
 | `module_id` | string | monitored circuit (3 phases), e.g. `PANEL-03` |
 | `panel_id`, `site_id` | string\|null | from the reading |
 | `timestamp` | ISO-8601 UTC, `...Z` | timestamp of the reading, not of processing |
@@ -77,7 +77,8 @@ Codes: `NONE`0 `LOOSE_CONNECTION`1 `VENTILATION_DEGRADATION`2 `OVERLOAD`3 `CONDE
 Reason codes: `CONNECTION_HEATING`10 `PHASE_ASYMMETRY`11 `LUG_RESIDUAL`12 `HEATING_TREND`13
 `ABS_TEMPERATURE`14 `CABINET_HEATING`20 `THERMAL_OVERLOAD`30 `NEUTRAL_CURRENT`31 `HUMIDITY_HIGH`40
 `CONDENSATION`41 `PD_ACTIVITY`50 `PD_TREND`51 `ML_ANOMALY`60 `ARC_TRIP`90 `ARC_SYSTEM_ERROR`91
-`ARC_LIGHT_WARNING`92 `ABS_TEMP_CRITICAL`93 `OVERLOAD_RULE`94 `SENSOR_FAULT`95 `CONDENSATION_RULE`96.
+`ARC_LIGHT_WARNING`92 `ABS_TEMP_CRITICAL`93 `OVERLOAD_RULE`94 `SENSOR_FAULT`95 `CONDENSATION_RULE`96
+`ARC_DETECTED_NO_TRIP`97.
 
 When a hard rule dominates the score, that rule carries the whole contribution and the statistical
 reasons are still listed with `contribution: 0` for context.
@@ -94,8 +95,8 @@ Five groups, each with a `status` of `ok` | `partial` | `degraded` | `not_instal
                        "ambient_c": 24.6, "max_c": 71.8, "status": "ok"},
  "humidity":          {"rh_pct": 31.4, "dew_point_c": 6.2, "dew_margin_c": 18.4, "status": "ok"},
  "partial_discharge": {"rate_per_min": null, "peak_mv": null, "status": "not_installed"},
- "arc":               {"trip_active": false, "system_error": false, "light_warning": false,
-                       "status": "ok"}}
+ "arc":               {"trip_active": false, "detected_no_trip": false, "system_error": false,
+                       "light_warning": false, "status": "ok"}}
 ```
 
 ### `data_quality` and confidence

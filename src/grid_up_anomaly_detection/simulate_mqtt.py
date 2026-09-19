@@ -36,11 +36,13 @@ def simulate_mqtt_data():
             # gerçekte beklemeden hızlıca test etmek için sahte zamanı hızlandırıyoruz:
             fake_time = time.time() + (counter * 60) # Her veri 1 dakika sonrasını taklit eder
             
+            module = random.choice(["M-001", "M-002", "M-003"])
+            
             payload = {
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(fake_time)),
                 "site_id": "SITE-01",
                 "panel_id": "P-001",
-                "module_id": "M-001",
+                "module_id": module,
                 "profile": "LV_PANEL",
                 "current_l1_a": current,
                 "current_l2_a": round(current * random.uniform(0.9, 1.1), 1),

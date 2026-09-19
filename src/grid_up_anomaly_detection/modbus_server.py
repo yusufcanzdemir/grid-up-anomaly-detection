@@ -7,9 +7,6 @@ from pymodbus.datastore import ModbusSequentialDataBlock, ModbusServerContext
 from pymodbus.datastore import ModbusDeviceContext as ModbusSlaveContext
 from pymodbus import ModbusDeviceIdentification
 
-# AI API'den (veya DB'den) veri çekilecek endpoint (Örn: Pano 1)
-SCADA_API_URL = "http://localhost:8000/scada/M-001"
-
 # 100 modül için 3200 register (100 * 32)
 store = ModbusSlaveContext(
     hr=ModbusSequentialDataBlock(1000, [0] * 3200),

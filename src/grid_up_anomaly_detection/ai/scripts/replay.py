@@ -5,6 +5,11 @@
 `speed` is the time-acceleration factor (600 = one simulated minute per 0.1 s). `stride` feeds every
 Nth minute, which is safe because every feature uses time windows rather than sample counts.
 The engine buffer is primed with the preceding 26 h first, so the replay can start just before onset.
+
+`--via mqtt` publishes the same scenario rows to the telemetry topic instead of calling /ingest, so the
+full demo path is exercised: scenario -> MQTT -> mqtt_to_db.py -> /ingest -> RiskEngine.update().
+The payload is then read back from /modules/{id}/latest. Priming stays an HTTP call: it is buffer
+history, not live telemetry.
 """
 from __future__ import annotations
 
@@ -14,7 +19,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, Callable
 
 import pandas as pd
 
@@ -28,6 +33,41 @@ def post(url: str, body: dict[str, Any] | None = None, timeout: float = 30.0) ->
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
+
+
+def get(url: str, timeout: float = 30.0) -> dict[str, Any]:
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
+        return json.loads(resp.read())
+
+
+def mqtt_sender(api: str, host: str | None, port: int | None,
+                timeout: float = 30.0) -> Callable[[dict[str, Any]], dict[str, Any]]:
+    """Publish one reading to the broker and wait until the backend has scored it."""
+    import paho.mqtt.client as mqtt
+
+    from grid_up_anomaly_detection.simulate_mqtt import MQTT_BROKER, MQTT_PORT, MQTT_TOPIC
+
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.connect(host or MQTT_BROKER, port or MQTT_PORT, 60)
+    client.loop_start()
+
+    def send(reading: dict[str, Any]) -> dict[str, Any]:
+        client.publish(MQTT_TOPIC, json.dumps(reading, default=str), qos=1).wait_for_publish(timeout)
+        want = pd.Timestamp(reading["timestamp"])
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                payload = get(f"{api}/modules/{reading['module_id']}/latest")
+                if pd.Timestamp(payload["timestamp"]) == want:
+                    return payload
+            except urllib.error.HTTPError as exc:
+                if exc.code != 404:          # 404 = backend has not scored this module yet
+                    raise
+            time.sleep(0.05)
+        raise SystemExit(f"no inference for {want} within {timeout:.0f} s: is mqtt_to_db.py running "
+                         f"and pointed at {api}?")
+
+    return send
 
 
 def clean(record: dict[str, Any]) -> dict[str, Any]:
@@ -48,6 +88,10 @@ def main() -> None:
     ap.add_argument("--stride", type=int, default=5, help="feed every Nth minute")
     ap.add_argument("--hours-before-onset", type=float, default=6.0)
     ap.add_argument("--max-samples", type=int, default=0, help="0 = whole scenario")
+    ap.add_argument("--via", choices=("http", "mqtt"), default="http",
+                    help="http: POST /ingest directly; mqtt: publish to the broker (needs mqtt_to_db.py running)")
+    ap.add_argument("--mqtt-host", default=None, help="default: simulate_mqtt.MQTT_BROKER")
+    ap.add_argument("--mqtt-port", type=int, default=None, help="default: simulate_mqtt.MQTT_PORT")
     args = ap.parse_args()
 
     meta_all = json.loads((SYNTH_DIR / "meta.json").read_text())
@@ -68,7 +112,7 @@ def main() -> None:
     print(f"onset / failure    : {onset} / {failure}")
     print(f"expected condition : {meta['expected_condition']}  (alarm at {meta.get('detect_level', 'WARNING')})")
     print(f"expected reasons   : {', '.join(meta.get('expected_reasons') or []) or '-'}")
-    print(f"speed x{args.speed:g}, stride {args.stride} min\n")
+    print(f"speed x{args.speed:g}, stride {args.stride} min, via {args.via}\n")
 
     # urlencode matters: a raw "+00:00" in a query string decodes to a space on the server
     query = urllib.parse.urlencode({"scenario": args.scenario, "until": begin.isoformat(),
@@ -80,6 +124,11 @@ def main() -> None:
     if args.max_samples:
         rows = rows.iloc[:args.max_samples]
     delay = 60.0 * args.stride / args.speed
+    if args.via == "mqtt":
+        send = mqtt_sender(args.api, args.mqtt_host, args.mqtt_port)
+    else:
+        def send(reading: dict[str, Any]) -> dict[str, Any]:
+            return post(f"{args.api}/ingest", reading)
 
     seen_reasons: dict[str, int] = {}
     worst = {"risk_score": -1}
@@ -90,7 +139,7 @@ def main() -> None:
     for record in rows.to_dict("records"):
         started = time.perf_counter()
         record["module_id"] = args.module_id      # the primed buffer belongs to this id
-        payload = post(f"{args.api}/ingest", clean(record))
+        payload = send(clean(record))
         if payload["status"] != last_status or payload["reasons"]:
             print(format_tick(payload))
             last_status = payload["status"]

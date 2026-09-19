@@ -116,6 +116,8 @@ venv/
 ai/models/
 ai/reports/
 ai/data/synthetic/
+src/grid_up_anomaly_detection/ai/models/
+src/grid_up_anomaly_detection/ai/reports/
 
 # Organizer-supplied hackathon material (Restricted / Hizmete Özel): never commit
 /data/

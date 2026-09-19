@@ -114,6 +114,21 @@ def test_arc_trip_is_critical_immediately_and_bypasses_models():
     assert at_arc["condition"].iloc[0] == "ARC_FLASH"
 
 
+def test_arc_detected_without_trip_is_critical_and_lowers_health():
+    """Arc mode 1: TVOC-2 saw an arc but no relay fired, so the breaker stays closed and load keeps flowing."""
+    scn = Scenario("a1", "arc_no_trip", days=10, onset_day=9.3)
+    df, _, scored, eng = run(scn)
+    at_arc = scored[scored.index >= df.attrs["onset"]]
+    assert at_arc["status"].iloc[0] == "CRITICAL"
+    assert at_arc["condition"].iloc[0] == "ARC_FLASH"
+    assert at_arc["current_max_pu"].iloc[0] > 0          # unlike a trip, currents do not drop to zero
+    assert at_arc["health"].iloc[-1] < 50                 # an arc is panel damage, not a sensor issue
+    out = eng.output(scored, str(df["module_id"].iloc[0]), scored.index.get_loc(at_arc.index[0]))
+    assert "ARC_DETECTED_NO_TRIP" in out["hard_rules"] and "ARC_TRIP" not in out["hard_rules"]
+    assert out["sensor_summary"]["arc"]["detected_no_trip"] is True
+    assert out["sensor_summary"]["arc"]["trip_active"] is False
+
+
 def test_single_sample_spike_does_not_raise_a_warning():
     scn = Scenario("b", "benign_transients", days=14, onset_day=None)
     _, _, scored, _ = run(scn)
@@ -135,6 +150,25 @@ def test_sensor_fault_is_reported_and_engine_keeps_running():
     assert out["data_quality"]["faulty_channels"]
     assert out["risk_score"] < 60  # a broken sensor is not a panel emergency
     assert out["status"] in ("WATCH", "NORMAL")
+
+
+def test_streaming_keeps_reporting_a_sensor_dead_longer_than_the_buffer():
+    """The streaming buffer holds 26 h. A lug probe dead for 2 days has no values left in it and used to
+    be treated as 'never installed': confidence back to 1.0, no faulty or missing channel."""
+    scn = Scenario("s", "sensor_fault", days=12, onset_day=8.5, phase=2)   # L3 stuck at 8.5 d, NaN from 10 d
+    df = simulate(scn, ModuleParams(), seed=3).iloc[::15]                   # 15-min polling keeps the test fast
+    mid = str(df["module_id"].iloc[0])
+    com = df[df["timestamp"] < df["timestamp"].iloc[0] + pd.Timedelta(days=7)]
+    eng = RiskEngine(CFG, {mid: fit_module_baseline(com, CFG, 400.0)})
+    live = df[df["timestamp"] >= df["timestamp"].iloc[0] + pd.Timedelta(days=8.3)]
+    eng.buffers[mid] = df[df["timestamp"] < live["timestamp"].iloc[0]].tail(104).reset_index(drop=True)
+    out = None
+    for rec in live.to_dict("records"):
+        out = eng.update(rec)
+    assert "temp_l3_c" in out["data_quality"]["faulty_channels"]
+    assert "temp_l3_c" in out["data_quality"]["missing_channels"]
+    assert out["confidence"] < 1.0
+    assert "SENSOR_FAULT" in out["hard_rules"] and out["status"] == "WATCH"
 
 
 # ---------------- engine mechanics ----------------

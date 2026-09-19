@@ -19,7 +19,7 @@ field_sensors:
     source: MPR-53CS                  # panel spec TEDAS-MLZ/2003-06.B 2.2.11 already mandates it
   lug_temperature:                    # [DECISION] wireless tag with an EXTERNAL probe
     probe: PT1000_or_thermocouple
-    min_range_c: 125                  # must clear rules.abs_temp_critical_c (90) and evidence hi (95)
+    min_range_c: 125                  # must clear rules.abs_temp_critical_c (currently 125, no headroom) and evidence hi (95)
   cabinet_temp_humidity: SHT31        # [DECISION] I2C, PTFE-filtered port on the enclosure wall
   ambient_temp: UNDECIDED             # temp_ambient_c is optional; channel stays NaN until decided
   arc: TVOC-2-COM                     # [DOC] already in the panel, read-only over Modbus RTU
